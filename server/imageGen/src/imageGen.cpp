@@ -9,19 +9,35 @@ ImageGenerator::ImageGenerator(std::mutex* streamLock , std::condition_variable*
 }
 
 ImageGenerator::~ImageGenerator(){
-    delete frame;
+    for(int i = 0 ; i < frameRows ; i++){
+        delete[] frame[i];
+    }
+    delete[] frame;
 }
 ImageGeneratorResult ImageGenerator::initImageGenerator(ImageResolutions resolution){
+
     switch (resolution)
     {
     case VGA:
-        frame = new std::vector(VGA_ROWS , std::vector<int>(VGA_COLS , 0));
+        frameRows = VGA_ROWS;
+        frameCols = VGA_COLS;
         break;
     case QVGA:
-        frame = new std::vector(QVGA_ROWS , std::vector<int>(QVGA_COLS , 0));
+        frameRows = QVGA_ROWS;
+        frameCols = QVGA_COLS;
+        break;
+    case TEST_1000:
+        frameRows = TEST_ROWS;
+        frameCols = TEST_COLS;
     default:
         break;
     }
+    frame = new int*[frameRows];
+    for(int i = 0 ; i < frameRows ; i++){
+        frame[i] = new int[frameCols];
+    }
+    currPixel = 0;
+    maxPixelPos = frameRows * frameCols;
     return IMG_GEN_OK;
 }
 
@@ -32,16 +48,32 @@ void ImageGenerator::readImageFromBuffer(){
 }
 
 void ImageGenerator::generateFrameFromBuffer(){
-    int item;
+    int readPixel;
     while(1){
         std::unique_lock<std::mutex> lock(*streamLock);
-        std::cout << "Waiting in consumer" << std::endl;
         streamCond->wait(lock , [this](){return (isReadyToStream->load() && !stream->empty());});
-        std::cout << "Entering critical section in consumer" << std::endl;
-        item = stream->front();
-        std::cout << "recieved " << item << " from buffer \n";
+        readPixel = stream->front();
         stream->pop();
-        std::cout << "exiting critical section in consumer" << std::endl;
+        //build image frame from recieved pixel.
+        //Done within critical section as currPixel should be in sync with recieved frame
+        currPixel++;
+        if(currPixel >= maxPixelPos){
+            //handle frame complete
+            currPixel = 0;
+            for(int i = 0 ; i < frameRows ; i++){
+                for(int j = 0 ; j < frameCols ; j++){
+                    //std::cout << frame[i][j] << " ";
+                }
+                //std::cout << std::endl;
+            }
+        }
+        else{
+            //store the recieved pixel into the frame
+            *((*(frame + currPixel / frameRows)) + (currPixel % frameCols)) = readPixel;
+        }
         streamCond->notify_all();
+
+        
+        
     }
 }

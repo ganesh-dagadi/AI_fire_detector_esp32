@@ -11,6 +11,8 @@
 #define VGA_COLS 480
 #define QVGA_ROWS 160
 #define QVGA_COLS 120
+#define TEST_ROWS 100
+#define TEST_COLS 10
 typedef enum ImageGeneratorResult{
     IMG_GEN_OK,
     IMG_GEN_FAIL
@@ -19,7 +21,8 @@ typedef enum ImageGeneratorResult{
 
 typedef enum ImageResolutions{
     VGA,
-    QVGA
+    QVGA,
+    TEST_1000
 }ImageResolutions;
 
 class ImageGenerator{
@@ -33,7 +36,12 @@ class ImageGenerator{
         std::condition_variable frameCond;
         std::atomic<bool> isFrameFull;
 
-        std::vector<std::vector<int>>* frame; // stores a frame. dimensions setup by init
+        int frameRows;
+        int frameCols;
+        int maxPixelPos;
+        // std::vector<std::vector<int>>* frame; // stores a frame. dimensions setup by init
+        int** frame;
+        int currPixel;
 
         void generateFrameFromBuffer();
     public:

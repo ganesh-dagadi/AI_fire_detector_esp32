@@ -21,11 +21,42 @@ static short communicationReconnectionTimes = 0;
 void communicationMainTask(void* params){
     while(1){
         executeStateMachineCommunication();
-        vTaskDelay(100 / portTICK_PERIOD_MS);
+        vTaskDelay(0);
     }
 }
 
 void executeStateMachineCommunication(){
+
+    if(!(communicationFlags & COMM_READY_TO_CONNECT) &&
+    (communicationConnectionState == COMM_CONNECTED
+    || communicationConnectionState == COMM_CONNECTING
+    || communicationConnectionState == COMM_RECONNECTING
+    )
+    ){
+        ESP_LOGW(COMM_TAG , "Disconnecting socket \n");
+        disconnect();
+    }
+    
+    if(communicationConnectionState == COMM_CONNECTED){
+        int* newPacket = (int*) malloc(100 * sizeof(int));
+        int currPacketNo = 0;
+        while(currPacketNo < 100){
+            newPacket[currPacketNo] = packetNO;
+            currPacketNo++;
+            packetNO++;
+            if(packetNO > 1000){
+                packetNO = 0;
+                currPacketNo = 0;
+                ESP_LOGI(COMM_TAG , "completed a frame");
+                break;
+            }
+        }
+        currPacketNo = 0;
+        send(socketFD , newPacket , 100 * sizeof(int) , MSG_DONTWAIT);
+        free(newPacket);       
+        return;
+    }
+
     if(communicationState == COMM_UNINITIALIZED){
         ESP_LOGI(COMM_TAG , "Initializing Communication machine");
         initializeCommunicationTask();
@@ -39,26 +70,6 @@ void executeStateMachineCommunication(){
         connectToTarget();
     }
 
-    if(!(communicationFlags & COMM_READY_TO_CONNECT) &&
-    (communicationConnectionState == COMM_CONNECTED
-    || communicationConnectionState == COMM_CONNECTING
-    || communicationConnectionState == COMM_RECONNECTING
-    )
-    ){
-        ESP_LOGW(COMM_TAG , "Disconnecting socket \n");
-        disconnect();
-    }
-
-    if(communicationConnectionState == COMM_CONNECTED){
-        ESP_LOGI(COMM_TAG ,"SENDING \n");
-        int* newPacket = (int*)malloc(4);
-        ESP_LOGI(COMM_TAG , "Sending %d" , packetNO);
-        *newPacket = packetNO;
-        send(socketFD , newPacket , 4 , MSG_DONTWAIT);
-        free(newPacket);
-        packetNO++;
-        ESP_LOGI(COMM_TAG ,"Done sending \n");
-    }
 }
 
 CommunicationResult initializeCommunicationTask(){

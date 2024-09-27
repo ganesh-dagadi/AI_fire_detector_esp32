@@ -18,7 +18,7 @@ int main(){
     Communication communication(&streamLock , &streamCond , &isReadyToConnect, &stream);
     ImageGenerator imageGenerator(&streamLock , &streamCond , &isReadyToConnect, &stream);
     communication.setupConnection(5000);
-    imageGenerator.initImageGenerator(QVGA);
+    imageGenerator.initImageGenerator(TEST_1000);
     isReadyToConnect.store(true);
     communication.beginFillingFramePackets();
     imageGenerator.readImageFromBuffer();
