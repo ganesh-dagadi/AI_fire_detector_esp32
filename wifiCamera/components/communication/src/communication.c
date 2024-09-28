@@ -26,6 +26,43 @@ void communicationMainTask(void* params){
 }
 
 void executeStateMachineCommunication(){
+<<<<<<< Updated upstream
+=======
+
+    if(!(communicationFlags & COMM_READY_TO_CONNECT) &&
+    (communicationConnectionState == COMM_CONNECTED
+    || communicationConnectionState == COMM_CONNECTING
+    || communicationConnectionState == COMM_RECONNECTING
+    )
+    ){
+        ESP_LOGW(COMM_TAG , "Disconnecting socket \n");
+        disconnect();
+    }
+    
+    if(communicationConnectionState == COMM_CONNECTED){
+        int* newPacket = (int*) malloc(4000 * sizeof(int));
+        int currPacketNo = 0;
+        while(currPacketNo < 4000){
+            newPacket[currPacketNo] = packetNO;
+            currPacketNo++;
+            packetNO++;
+            if(packetNO > 19200){
+                if(currPacketNo < 4000) newPacket[currPacketNo] = -1;
+                packetNO = 0;
+                currPacketNo = 0;
+                ESP_LOGI(COMM_TAG , "completed a frame");
+                break;
+            }
+        }
+        currPacketNo = 0;
+        send(socketFD , newPacket , 4000 * sizeof(int) , MSG_DONTWAIT);
+        free(newPacket);
+        //sleep for 50 ms to let reciever read packet
+        vTaskDelay(20 / portTICK_PERIOD_MS);
+        return;
+    }
+
+>>>>>>> Stashed changes
     if(communicationState == COMM_UNINITIALIZED){
         ESP_LOGI(COMM_TAG , "Initializing Communication machine");
         initializeCommunicationTask();

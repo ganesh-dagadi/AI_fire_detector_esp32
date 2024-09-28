@@ -6,7 +6,7 @@
 #include <atomic>
 #include <queue>
 
-#define MAX_QUEUE_SIZE 1000
+#define MAX_QUEUE_SIZE 100000
 typedef enum CommunicationResult{
     COMM_OK,
     COMM_FAIL

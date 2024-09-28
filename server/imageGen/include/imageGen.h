@@ -33,7 +33,16 @@ class ImageGenerator{
         std::condition_variable frameCond;
         std::atomic<bool> isFrameFull;
 
+<<<<<<< Updated upstream
         std::vector<std::vector<int>>* frame; // stores a frame. dimensions setup by init
+=======
+        int frameRows;
+        int frameCols;
+        int maxPixelPos;
+        // std::vector<int> frame; // stores a frame. dimensions setup by init
+        int** frame;
+        int currPixel;
+>>>>>>> Stashed changes
 
         void generateFrameFromBuffer();
     public:

@@ -5,6 +5,7 @@
 #include <threadManager.h>
 #include <cstring> // For memset
 #include <queue>
+#include <stdio.h>
 
 Communication::Communication(std::mutex* streamLock , std::condition_variable* streamCond , std::atomic<bool>* isReadyToStream , std::queue<int>* buffer){
     this->streamLock = streamLock;
@@ -65,9 +66,14 @@ CommunicationResult Communication::setupConnection(int port){
 // }
 
 void Communication::captureStreamAndFillQueue() {
+<<<<<<< Updated upstream
     int received;
+=======
+    int* received = new int[4000];
+>>>>>>> Stashed changes
     int recvSize;
     std::cout << "started filling stream" << std::endl;
+    FILE* file = fopen("socetComm" , "w");
     while (true) {
         std::unique_lock<std::mutex> lock(*streamLock);
 
@@ -75,15 +81,28 @@ void Communication::captureStreamAndFillQueue() {
         streamCond->wait(lock, [this]() {
             return (isReadyToStream->load() && stream->size() < MAX_QUEUE_SIZE);
         });
+<<<<<<< Updated upstream
         std::cout << "entered critical section in producer" << std::endl;
         recvSize = recvfrom(socketFd, &received, sizeof(received), 0, nullptr, nullptr);
+=======
+        recvSize = recvfrom(socketFd, received, 4000 * sizeof(int), 0, nullptr, nullptr);
+>>>>>>> Stashed changes
         if (recvSize < 0) {
             perror("receive");
             streamCond->notify_all();
             return;  // Exit on receive error
         }else if(recvSize > 0){
+<<<<<<< Updated upstream
             std::cout << stream->size() << std::endl;
             stream->push(received);
+=======
+            for(int i = 0 ; i < 4000 ; i++){
+
+                if(received[i] == -1) break;
+                stream->push(received[i]);
+                fprintf(file , "%d \n" , received[i]);
+            }
+>>>>>>> Stashed changes
         }
         std::cout << "exiting critical section in producer" << std::endl;
         streamCond->notify_all();
