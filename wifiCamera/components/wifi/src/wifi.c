@@ -1,8 +1,8 @@
 #include "wifi.h"
 #include "freertos/task.h"
 
-#define WIFI_SSID ""
-#define WIFI_PASSWORD ""
+#define WIFI_SSID "Netraganesh 2"
+#define WIFI_PASSWORD "4vtNU01Z1877"
 
 const char* WIFI_TAG = "WIFI Task";
 int32_t wifiFlag = 0;

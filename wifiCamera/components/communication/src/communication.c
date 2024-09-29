@@ -1,9 +1,11 @@
 #include "communication.h"
 #include "esp_log.h"
 #include "lwip/sockets.h"
+#include "camera.h"
 
 #define DOMAIN AF_INET
 #define CONN_TYPE SOCK_DGRAM
+#define UDP_PACKET_PIXEL_CAP 1000
 #define IP_OC_1 192 
 #define IP_OC_2 168
 #define IP_OC_3 29
@@ -21,11 +23,45 @@ static short communicationReconnectionTimes = 0;
 void communicationMainTask(void* params){
     while(1){
         executeStateMachineCommunication();
-        vTaskDelay(100 / portTICK_PERIOD_MS);
+        vTaskDelay(0);
     }
 }
 
 void executeStateMachineCommunication(){
+
+    if(!(communicationFlags & COMM_READY_TO_CONNECT) &&
+    (communicationConnectionState == COMM_CONNECTED
+    || communicationConnectionState == COMM_CONNECTING
+    || communicationConnectionState == COMM_RECONNECTING
+    )
+    ){
+        ESP_LOGW(COMM_TAG , "Disconnecting socket \n");
+        disconnect();
+    }
+    
+    if(communicationConnectionState == COMM_CONNECTED){
+        int* newPacket = (int*) malloc(UDP_PACKET_PIXEL_CAP * sizeof(int));
+        int currPacketNo = 0;
+        // while(currPacketNo < UDP_PACKET_PIXEL_CAP){
+        //     newPacket[currPacketNo] = packetNO;
+        //     currPacketNo++;
+        //     packetNO++;
+        //     if(packetNO > 1000){
+        //         packetNO = 0;
+        //         currPacketNo = 0;
+        //         ESP_LOGI(COMM_TAG , "completed a frame");
+        //         break;
+        //     }
+        // }
+        // currPacketNo = 0;
+        fillBufferWithPixels(newPacket , UDP_PACKET_PIXEL_CAP);
+        send(socketFD , newPacket , UDP_PACKET_PIXEL_CAP * sizeof(int) , MSG_DONTWAIT);
+        free(newPacket); 
+        //sleep for 20ms to let reciever process packet 
+        vTaskDelay(20 / portTICK_PERIOD_MS);
+        return;
+    }
+
     if(communicationState == COMM_UNINITIALIZED){
         ESP_LOGI(COMM_TAG , "Initializing Communication machine");
         initializeCommunicationTask();
@@ -39,26 +75,6 @@ void executeStateMachineCommunication(){
         connectToTarget();
     }
 
-    if(!(communicationFlags & COMM_READY_TO_CONNECT) &&
-    (communicationConnectionState == COMM_CONNECTED
-    || communicationConnectionState == COMM_CONNECTING
-    || communicationConnectionState == COMM_RECONNECTING
-    )
-    ){
-        ESP_LOGW(COMM_TAG , "Disconnecting socket \n");
-        disconnect();
-    }
-
-    if(communicationConnectionState == COMM_CONNECTED){
-        ESP_LOGI(COMM_TAG ,"SENDING \n");
-        int* newPacket = (int*)malloc(4);
-        ESP_LOGI(COMM_TAG , "Sending %d" , packetNO);
-        *newPacket = packetNO;
-        send(socketFD , newPacket , 4 , MSG_DONTWAIT);
-        free(newPacket);
-        packetNO++;
-        ESP_LOGI(COMM_TAG ,"Done sending \n");
-    }
 }
 
 CommunicationResult initializeCommunicationTask(){
@@ -71,6 +87,7 @@ CommunicationResult initializeCommunicationTask(){
         return COMM_FAIL;
     }
     ESP_LOGI(COMM_TAG , "Socket created \n");
+    initializeCamera();
     communicationState = COMM_INITIALIZED;
     return COMM_OK;
 }

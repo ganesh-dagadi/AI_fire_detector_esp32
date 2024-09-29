@@ -11,6 +11,12 @@
 #define VGA_COLS 480
 #define QVGA_ROWS 160
 #define QVGA_COLS 120
+#define TEST_ROWS 100
+#define TEST_COLS 10
+
+#define FRAME_PURGE 0
+#define FRAME_STORE 1
+#define CORRUPTED_FRAME_HANDLING FRAME_PURGE
 typedef enum ImageGeneratorResult{
     IMG_GEN_OK,
     IMG_GEN_FAIL
@@ -19,7 +25,8 @@ typedef enum ImageGeneratorResult{
 
 typedef enum ImageResolutions{
     VGA,
-    QVGA
+    QVGA,
+    TEST_1000
 }ImageResolutions;
 
 class ImageGenerator{
@@ -31,11 +38,16 @@ class ImageGenerator{
         // for synchronization between image buffer reader and image producer
         std::mutex frameLock;
         std::condition_variable frameCond;
-        std::atomic<bool> isFrameFull;
+        std::atomic<bool> isFillingFrame;
 
-        std::vector<std::vector<int>>* frame; // stores a frame. dimensions setup by init
+        int frameRows;
+        int frameCols;
+        int maxPixelPos;
+        // std::vector<std::vector<int>>* frame; // stores a frame. dimensions setup by init
+        int** frame;
+        int currPixel;
 
-        void generateFrameFromBuffer();
+        void generateImageFromBuffer();
     public:
         ImageGenerator(std::mutex* streamLock , std::condition_variable* streamCond , std::atomic<bool>* isReadyToStream, std::queue<int>* stream);
         ~ImageGenerator();

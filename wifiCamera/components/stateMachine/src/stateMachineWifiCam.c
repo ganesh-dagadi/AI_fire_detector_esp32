@@ -62,7 +62,7 @@ void executeStateMachineState(){
             "WIFI_TASK",
             WIFI_TASK_MEMORY,
             NULL,
-            5,
+            19,
             &wifiTaskHandle
             );
         }
@@ -101,7 +101,7 @@ void executeStateMachineState(){
             "NETIF_TASK",
             NETIF_TASK_MEMEORY,
             NULL,
-            5,
+            19,
             &netifTaskHandle
             );
         }
@@ -130,7 +130,7 @@ void executeStateMachineState(){
             "COMMUNICATION_TASK",
             COMMUNICATION_TASK_MEMORY,
             NULL,
-            5,
+            15,
             &commTaskHandle
             );
         }

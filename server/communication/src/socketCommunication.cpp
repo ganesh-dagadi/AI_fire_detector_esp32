@@ -65,27 +65,25 @@ CommunicationResult Communication::setupConnection(int port){
 // }
 
 void Communication::captureStreamAndFillQueue() {
-    int received;
+    int* received = new int[UDP_PACKET_PIXEL_CAP];
     int recvSize;
     std::cout << "started filling stream" << std::endl;
     while (true) {
         std::unique_lock<std::mutex> lock(*streamLock);
-
-        std::cout << "Beginning wait in producer" << std::endl;
         streamCond->wait(lock, [this]() {
             return (isReadyToStream->load() && stream->size() < MAX_QUEUE_SIZE);
         });
-        std::cout << "entered critical section in producer" << std::endl;
-        recvSize = recvfrom(socketFd, &received, sizeof(received), 0, nullptr, nullptr);
+        recvSize = recvfrom(socketFd, received, UDP_PACKET_PIXEL_CAP * sizeof(int), 0, nullptr, nullptr);
         if (recvSize < 0) {
             perror("receive");
             streamCond->notify_all();
             return;  // Exit on receive error
         }else if(recvSize > 0){
-            std::cout << stream->size() << std::endl;
-            stream->push(received);
+            for(int i = 0 ; i < UDP_PACKET_PIXEL_CAP ; i++){
+                if(received[i] == -2) break;
+                stream->push(received[i]);
+            }
         }
-        std::cout << "exiting critical section in producer" << std::endl;
         streamCond->notify_all();
     }
 }
