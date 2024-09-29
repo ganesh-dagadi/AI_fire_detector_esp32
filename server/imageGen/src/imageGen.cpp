@@ -44,17 +44,19 @@ ImageGeneratorResult ImageGenerator::initImageGenerator(ImageResolutions resolut
 
 void ImageGenerator::readImageFromBuffer(){
     ThreadManager::getInstance().postRunnable([this](){
-        this->generateFrameFromBuffer();
+        this->generateImageFromBuffer();
     });
 }
 
-void ImageGenerator::generateFrameFromBuffer(){
+void ImageGenerator::generateImageFromBuffer(){
     int readPixel;
     while(1){
         std::unique_lock<std::mutex> lock(*streamLock);
         streamCond->wait(lock , [this](){return (isReadyToStream->load() && !stream->empty());});
         readPixel = stream->front();
         stream->pop();
+        streamCond->notify_all();  
+
         //build image frame from recieved pixel.
         if(isFillingFrame.load())
             currPixel++;
@@ -63,7 +65,7 @@ void ImageGenerator::generateFrameFromBuffer(){
                 // we were already filling a frame but got a new frame start flag,
                 if(CORRUPTED_FRAME_HANDLING == FRAME_STORE){
                     std::cout << "Got corrupted frame. Storing anyways";
-                    //TODO: STORE FRAME IN QUEUE
+                    this->produceTargetImage();
                 }
             }
             currPixel = 0;
@@ -74,12 +76,12 @@ void ImageGenerator::generateFrameFromBuffer(){
                 //not filling a frame but got -1, junk pixel
                 continue;
             }
+            this->produceTargetImage();
             currPixel = 0;
             isFillingFrame.store(false);
         }
         else{
-            if(isFillingFrame.load()){
-                std::cout << currPixel << " ";   
+            if(isFillingFrame.load()){  
                 if(currPixel >= maxPixelPos){
                     //if currPixel has crossed maxPixel, we should have lost both end frame and start frame flags.
                     //reset the entire frame and wait for 0
@@ -90,6 +92,19 @@ void ImageGenerator::generateFrameFromBuffer(){
                 *((*(frame + currPixel / frameCols)) + (currPixel % frameCols)) = readPixel;
             }       
         }
-        streamCond->notify_all();  
     }
+}
+
+void ImageGenerator::produceTargetImage(){
+    static int frameNo = 0;
+    std::cout << "frame " << frameNo << std::endl;
+    frameNo++;
+    for(int i = 0 ; i < frameRows ; i++){
+        for(int j = 0 ; j < frameCols ; j++){
+            std::cout << frame[i][j] << " ";
+        }
+        std::cout << std::endl;
+    }
+    std::cout << std::endl;
+    std::cout << std::endl;
 }

@@ -47,7 +47,7 @@ class ImageGenerator{
         int** frame;
         int currPixel;
 
-        void generateFrameFromBuffer();
+        void generateImageFromBuffer();
     public:
         ImageGenerator(std::mutex* streamLock , std::condition_variable* streamCond , std::atomic<bool>* isReadyToStream, std::queue<int>* stream);
         ~ImageGenerator();
