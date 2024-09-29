@@ -1,9 +1,11 @@
 #include "communication.h"
 #include "esp_log.h"
 #include "lwip/sockets.h"
+#include "camera.h"
 
 #define DOMAIN AF_INET
 #define CONN_TYPE SOCK_DGRAM
+#define UDP_PACKET_PIXEL_CAP 1000
 #define IP_OC_1 192 
 #define IP_OC_2 168
 #define IP_OC_3 29
@@ -38,22 +40,25 @@ void executeStateMachineCommunication(){
     }
     
     if(communicationConnectionState == COMM_CONNECTED){
-        int* newPacket = (int*) malloc(100 * sizeof(int));
+        int* newPacket = (int*) malloc(UDP_PACKET_PIXEL_CAP * sizeof(int));
         int currPacketNo = 0;
-        while(currPacketNo < 100){
-            newPacket[currPacketNo] = packetNO;
-            currPacketNo++;
-            packetNO++;
-            if(packetNO > 1000){
-                packetNO = 0;
-                currPacketNo = 0;
-                ESP_LOGI(COMM_TAG , "completed a frame");
-                break;
-            }
-        }
-        currPacketNo = 0;
-        send(socketFD , newPacket , 100 * sizeof(int) , MSG_DONTWAIT);
-        free(newPacket);       
+        // while(currPacketNo < UDP_PACKET_PIXEL_CAP){
+        //     newPacket[currPacketNo] = packetNO;
+        //     currPacketNo++;
+        //     packetNO++;
+        //     if(packetNO > 1000){
+        //         packetNO = 0;
+        //         currPacketNo = 0;
+        //         ESP_LOGI(COMM_TAG , "completed a frame");
+        //         break;
+        //     }
+        // }
+        // currPacketNo = 0;
+        fillBufferWithPixels(newPacket , UDP_PACKET_PIXEL_CAP);
+        send(socketFD , newPacket , UDP_PACKET_PIXEL_CAP * sizeof(int) , MSG_DONTWAIT);
+        free(newPacket); 
+        //sleep for 20ms to let reciever process packet 
+        vTaskDelay(20 / portTICK_PERIOD_MS);
         return;
     }
 
@@ -82,6 +87,7 @@ CommunicationResult initializeCommunicationTask(){
         return COMM_FAIL;
     }
     ESP_LOGI(COMM_TAG , "Socket created \n");
+    initializeCamera();
     communicationState = COMM_INITIALIZED;
     return COMM_OK;
 }

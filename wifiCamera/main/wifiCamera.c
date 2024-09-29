@@ -7,7 +7,6 @@
 
 void app_main(void)
 {
-    // ESP_LOGI("MAIN" , "HELLO WORLD");
     xTaskCreate(stateMachineMain,
                 "STATE_MACHINE_TASK",
                 STATE_MACHINE_MEMORY,
@@ -15,10 +14,4 @@ void app_main(void)
                 19,
                 NULL
                );
-//     int k = 0;
-//     for(int i = 0 ; i < 192000000; i++){
-//         k = i+1;
-//     }
-//     ESP_LOGI("something" , "%d " , k);
-
 }

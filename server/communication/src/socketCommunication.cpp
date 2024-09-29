@@ -65,7 +65,7 @@ CommunicationResult Communication::setupConnection(int port){
 // }
 
 void Communication::captureStreamAndFillQueue() {
-    int* received = new int[100];
+    int* received = new int[UDP_PACKET_PIXEL_CAP];
     int recvSize;
     std::cout << "started filling stream" << std::endl;
     while (true) {
@@ -73,15 +73,15 @@ void Communication::captureStreamAndFillQueue() {
         streamCond->wait(lock, [this]() {
             return (isReadyToStream->load() && stream->size() < MAX_QUEUE_SIZE);
         });
-        recvSize = recvfrom(socketFd, received, 100 * sizeof(int), 0, nullptr, nullptr);
+        recvSize = recvfrom(socketFd, received, UDP_PACKET_PIXEL_CAP * sizeof(int), 0, nullptr, nullptr);
         if (recvSize < 0) {
             perror("receive");
             streamCond->notify_all();
             return;  // Exit on receive error
         }else if(recvSize > 0){
-            for(int i = 0 ; i < 100 ; i++){
+            for(int i = 0 ; i < UDP_PACKET_PIXEL_CAP ; i++){
+                if(received[i] == -2) break;
                 stream->push(received[i]);
-                std::cout << received[i] << " ";
             }
         }
         streamCond->notify_all();

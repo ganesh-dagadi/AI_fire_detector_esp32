@@ -13,6 +13,10 @@
 #define QVGA_COLS 120
 #define TEST_ROWS 100
 #define TEST_COLS 10
+
+#define FRAME_PURGE 0
+#define FRAME_STORE 1
+#define CORRUPTED_FRAME_HANDLING FRAME_PURGE
 typedef enum ImageGeneratorResult{
     IMG_GEN_OK,
     IMG_GEN_FAIL
@@ -34,7 +38,7 @@ class ImageGenerator{
         // for synchronization between image buffer reader and image producer
         std::mutex frameLock;
         std::condition_variable frameCond;
-        std::atomic<bool> isFrameFull;
+        std::atomic<bool> isFillingFrame;
 
         int frameRows;
         int frameCols;
