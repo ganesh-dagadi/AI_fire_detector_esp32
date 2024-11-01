@@ -20,6 +20,7 @@ int socketFD;
 int packetNO = 0;
 char* COMM_TAG = "COMMUNICATION_TASK";
 static short communicationReconnectionTimes = 0;
+int packetCaptured = 0;
 void communicationMainTask(void* params){
     while(1){
         executeStateMachineCommunication();
@@ -42,24 +43,56 @@ void executeStateMachineCommunication(){
     if(communicationConnectionState == COMM_CONNECTED){
         int* newPacket = (int*) malloc(UDP_PACKET_PIXEL_CAP * sizeof(int));
         int currPacketNo = 0;
+        int framePxNo = 0;
+        for(int m = 0 ; m < 4 ;m++){
+            ESP_LOGI("DEBUG" , "WAITING FOR CAPTURE");
+            //while(1)
+            captureFrame();
+            frame[0][0] = -1;
+            frame[frameRows - 1][frameCols - 1] = -2;
+            ESP_LOGI("DEBUG" , "filled sending now");
+            packetCaptured = 1;
+            currPacketNo = 0;
+            // fillBufferWithPixels(newPacket , UDP_PACKET_PIXEL_CAP);
+            while(framePxNo < frameRows * frameCols){
+                newPacket[currPacketNo] = frame[framePxNo / frameCols][framePxNo % frameCols];
+                framePxNo++;
+                currPacketNo++;
+                if(currPacketNo == UDP_PACKET_PIXEL_CAP){
+                    send(socketFD , newPacket , UDP_PACKET_PIXEL_CAP * sizeof(int) , MSG_DONTWAIT);
+                    vTaskDelay(20 / portTICK_PERIOD_MS);
+                    currPacketNo = 0;
+                }
+            }
+            if(currPacketNo > 0){
+                send(socketFD , newPacket , UDP_PACKET_PIXEL_CAP * sizeof(int) , MSG_DONTWAIT);
+                vTaskDelay(20 / portTICK_PERIOD_MS);
+                currPacketNo = 0;
+            }
+            free(newPacket);
+            //sleep for 20ms to let reciever process packet 
+            
+            return;
+        }
+        
         // while(currPacketNo < UDP_PACKET_PIXEL_CAP){
         //     newPacket[currPacketNo] = packetNO;
         //     currPacketNo++;
         //     packetNO++;
-        //     if(packetNO > 1000){
-        //         packetNO = 0;
-        //         currPacketNo = 0;
-        //         ESP_LOGI(COMM_TAG , "completed a frame");
-        //         break;
-        //     }
+            // if(packetNO > 1000){
+            //     packetNO = 0;
+            //     currPacketNo = 0;
+            //     ESP_LOGI(COMM_TAG , "completed a frame");
+            //     break;
+            // }
         // }
         // currPacketNo = 0;
-        fillBufferWithPixels(newPacket , UDP_PACKET_PIXEL_CAP);
-        send(socketFD , newPacket , UDP_PACKET_PIXEL_CAP * sizeof(int) , MSG_DONTWAIT);
-        free(newPacket); 
-        //sleep for 20ms to let reciever process packet 
-        vTaskDelay(20 / portTICK_PERIOD_MS);
-        return;
+        // fillBufferWithPixels(newPacket , UDP_PACKET_PIXEL_CAP);
+        // send(socketFD , newPacket , UDP_PACKET_PIXEL_CAP * sizeof(int) , MSG_DONTWAIT);
+        // free(newPacket); 
+        // //sleep for 20ms to let reciever process packet 
+        // vTaskDelay(20 / portTICK_PERIOD_MS);
+        // return;
     }
 
     if(communicationState == COMM_UNINITIALIZED){

@@ -80,8 +80,9 @@ void Communication::captureStreamAndFillQueue() {
             return;  // Exit on receive error
         }else if(recvSize > 0){
             for(int i = 0 ; i < UDP_PACKET_PIXEL_CAP ; i++){
-                if(received[i] == -2) break;
+                if(received[i] == -3) break;
                 stream->push(received[i]);
+                std::cout << received[i] << std::endl;
             }
         }
         streamCond->notify_all();

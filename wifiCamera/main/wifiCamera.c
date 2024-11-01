@@ -3,7 +3,7 @@
 #include "freertos/task.h"
 #include "esp_log.h"
 
-#define STATE_MACHINE_MEMORY 2048
+#define STATE_MACHINE_MEMORY 4096
 
 void app_main(void)
 {

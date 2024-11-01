@@ -16,7 +16,7 @@
 
 #define FRAME_PURGE 0
 #define FRAME_STORE 1
-#define CORRUPTED_FRAME_HANDLING FRAME_PURGE
+#define CORRUPTED_FRAME_HANDLING FRAME_STORE
 typedef enum ImageGeneratorResult{
     IMG_GEN_OK,
     IMG_GEN_FAIL
